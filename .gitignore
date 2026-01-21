@@ -1,2 +1,7 @@
 .env
 .json
+.jsonl
+__pycache__/
+*.pyc
+*.pyo
+.log

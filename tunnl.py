@@ -13,6 +13,20 @@ class Tunnl:
         self.twitter = None
         self.bearer = None
         
+        self.ranks = ["PURPLE", "BRONZE_1", "BRONZE_2", "BRONZE_3", "SILVER_1", "SILVER_2", "SILVER_3"]
+        self.my_rank = None
+        
+    async def  get_my_rank(self):
+        url = "https://api-tunnl-mainnet-6l3nt.ondigitalocean.app/profile/me"
+        headers = { 
+            'Authorization': f'Bearer {self.bearer}',
+            "User-Agent": self.user_agent   
+        }
+        response =  await self.session.get(url, headers=headers )
+        data = await response.json()  
+        
+        return data.get("tier")
+        
     async def get_auth_token(self, identity_token, token):
         url = "https://api-tunnl-mainnet-6l3nt.ondigitalocean.app/auth/authenticate"
         headers = {
@@ -81,11 +95,28 @@ class Tunnl:
         else: 
             return False
     
+    async def get_campaign_rank_req(self, id_campaign):
+        url = f"https://api-tunnl-mainnet-6l3nt.ondigitalocean.app/campaigns/{id_campaign}"
+        headers = {     
+                   
+            'Authorization': f'Bearer {self.bearer}',
+            "User-Agent": self.user_agent   
+        }
+        
+        response =  await self.session.get(url, headers=headers )
+        data = await response.json()  
+        return data.get("min_tier")
+        
+        
+    
     async def proceed_claims(self, data):
         count = 0
         for campaign in data:
-            
-            if campaign["status"] == "ACTIVE" and  campaign["has_points_rewards"] == True:
+            if not self.my_rank:
+                self.my_rank = await self.get_my_rank()
+            rank_req = await self.get_campaign_rank_req(campaign["id"])
+            print(f"Campaign ID: {campaign['id']} | Required Rank: {rank_req} | My Rank: {self.my_rank}")
+            if campaign["status"] == "ACTIVE" and self.ranks.index(self.my_rank) >= self.ranks.index(rank_req):
                 id = campaign["id"]
                 
                 claim = await self.claim_campaign(id)
