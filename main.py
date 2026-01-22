@@ -3,19 +3,16 @@ import os
 import random
 import aiohttp
 import asyncio
+import config
 import logging
+
 from helpers import create_env_for_import
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-logging.basicConfig(
-    filename="tunnl_bot.log",
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
+
 
 # Also log to console
 console_handler = logging.StreamHandler()
@@ -51,6 +48,7 @@ async def main():
         await tunnl.twitter.get_cookies()
         await tunnl.connect_tunnl_via_twitter()
         logging.info("Connected to Tunnl via Twitter successfully.")
+       
         while True:
             try:
                 data = await tunnl.get_campaigns()
