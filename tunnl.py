@@ -2,6 +2,8 @@
 from twitter_client import TwitterClient
 from helpers import *
 from config import *
+import logging 
+import config
 class Tunnl:
     def __init__(self, auth_client: str, user_agent: str, version: int, platform: str, session):
         self.auth_client = auth_client
@@ -115,13 +117,18 @@ class Tunnl:
             if not self.my_rank:
                 self.my_rank = await self.get_my_rank()
             rank_req = await self.get_campaign_rank_req(campaign["id"])
-            print(f"Campaign ID: {campaign['id']} | Required Rank: {rank_req} | My Rank: {self.my_rank}")
-            if campaign["status"] == "ACTIVE" and self.ranks.index(self.my_rank) >= self.ranks.index(rank_req):
-                id = campaign["id"]
+            
+            
+            logging.info(f"Campaign ID: {campaign['id']} | Required Rank: {rank_req} | My Rank: {self.my_rank}")
+            if campaign["status"] == "ACTIVE":
+                if self.ranks.index("SILVER_3") >= self.ranks.index(rank_req):
+                    logging.info(f"Campaign ID: {campaign['id']} | Claiming")
+                    id = campaign["id"]
                 
-                claim = await self.claim_campaign(id)
-                if (claim != False):
-                    count +=1
+                    claim = await self.claim_campaign(id)
+                    if (claim != False):
+                        count +=1
+                        logging.info(f"Campaign ID: {campaign['id']} | Claimed")
         return count
         
     
