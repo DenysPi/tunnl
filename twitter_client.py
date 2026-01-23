@@ -54,7 +54,7 @@ class TwitterClient:
             "Authorization": f"Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
             "User-Agent": "Mozilla/5.0",
             "Accept": "application/json",
-            "Cookie": "auth_token=8778fb4379ae255111c0c187201bda48b3157072"
+            "Cookie": f"auth_token={self.auth_token}"
         }
         url = "https://api.x.com/graphql/178EtFdhcGqmoyzKL4muaA/Viewer"
         
@@ -69,6 +69,7 @@ class TwitterClient:
                     if len(key_value) == 2:
                         key, value = key_value
                         cookies_dict[key] = value  
+                        
                         
             cookies_dict["auth_token"] = self.auth_token
             load_cookies_to_json(cookies_dict)
@@ -103,7 +104,9 @@ class TwitterClient:
 
         
         
-        response = await self.session.get('https://twitter.com/i/api/2/oauth2/authorize', params=params, cookies=cookies, headers=headers)
+        response = await self.session.get('https://x.com/i/api/2/oauth2/authorize', params=params, cookies=cookies, headers=headers)
+        print(response.status)
+        print(await response.text())
         if response.status == 200:
             data = await response.json()  
             auth_code = data.get('auth_code')
@@ -115,23 +118,12 @@ class TwitterClient:
         cookies = get_cookies_from_json(FILE_PATH)
 
         headers = {
-            'accept': '*/*',
-            'accept-language': 'en-US,en;q=0.9',
-            'authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
-            'priority': 'u=1, i',
-            'referer': "https://x.com/i/oauth2/authorize?",
-            'sec-ch-ua': f'"Not A(Brand";v="8", "Chromium";v="{self.version}", "Google Chrome";v="{self.version}"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': f'"{self.platform}"',
-            'sec-fetch-dest': 'empty',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-site': 'same-origin',
-            'user-agent': self.user_agent,
-            'x-client-transaction-id': self.generate_client_transaction_id(),
-            'x-csrf-token': cookies["ct0"],
-            'x-twitter-active-user': 'yes',
-            'x-twitter-auth-type': 'OAuth2Session',
-            'x-twitter-client-language': 'en',
+            "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+            "x-csrf-token": cookies["ct0"],
+            "x-twitter-auth-type": "OAuth2Session",
+            "x-twitter-active-user": "yes",
+            "user-agent": self.user_agent,
+            "referer": "https://x.com/i/oauth2/authorize",
         }
         
         data = {
@@ -139,7 +131,7 @@ class TwitterClient:
             'code': auth_code,
         }
 
-        response = await self.session.post('https://twitter.com/i/api/2/oauth2/authorize', cookies=cookies, headers=headers, data=data)
+        response = await self.session.post('https://x.com/i/api/2/oauth2/authorize', cookies=cookies, headers=headers, data=data)
         
         if response.status == 200:
             redirect_uri =  await response.json()
