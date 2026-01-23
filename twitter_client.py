@@ -152,7 +152,7 @@ class TwitterClient:
     
     async def start_connect_twitter(self):
         url_data = await self.get_connect_twitter_url()
-        
+        print(url_data)
         if url_data:
             oauth_url = url_data.get("url")
             
@@ -163,9 +163,10 @@ class TwitterClient:
             
             
             auth_code = await self.startOauth2(params=params)
-            
+            print(auth_code)
             if auth_code: 
                 status, redirect_url = await self.confirm_oauth2(auth_code=auth_code)
+                print(redirect_url)
                 if status:
              
                     async with self.session.get(redirect_url, allow_redirects=False) as callback_response:
@@ -181,9 +182,10 @@ class TwitterClient:
                                 parsed_final = urlparse(final_redirect)
                                 final_params = parse_qs(parsed_final.query)
                                 authorization_code = final_params.get('privy_oauth_code', [None])[0]
-                                
+                                print(authorization_code)
                                 if authorization_code:
                                     success, result = await self.authenticate_with_privy(authorization_code)
+                                    print(result)
                                     if success:
 
                                         return True, result

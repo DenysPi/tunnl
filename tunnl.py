@@ -119,16 +119,16 @@ class Tunnl:
             rank_req = await self.get_campaign_rank_req(campaign["id"])
             
             
-            logging.info(f"Campaign ID: {campaign['id']} | Required Rank: {rank_req} | My Rank: {self.my_rank}")
-            if campaign["status"] == "ACTIVE":
-                if self.ranks.index("SILVER_3") >= self.ranks.index(rank_req):
-                    logging.info(f"Campaign ID: {campaign['id']} | Claiming")
-                    id = campaign["id"]
+            
+            if campaign["status"] == "ACTIVE" and self.ranks.index(self.my_rank) >= self.ranks.index(rank_req):
+                logging.info(f"Campaign ID: {campaign['id']} | Required Rank: {rank_req} | My Rank: {self.my_rank}")
+                logging.info(f"Campaign ID: {campaign['id']} | Claiming")
+                id = campaign["id"]
                 
-                    claim = await self.claim_campaign(id)
-                    if (claim != False):
-                        count +=1
-                        logging.info(f"Campaign ID: {campaign['id']} | Claimed")
+                claim = await self.claim_campaign(id)
+                if (claim != False):
+                    count +=1
+                    logging.info(f"Campaign ID: {campaign['id']} | Claimed")
         return count
         
     
