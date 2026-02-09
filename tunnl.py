@@ -1,15 +1,18 @@
 
 from twitter_client import TwitterClient
+from captcha import Captcha
 from helpers import *
 from config import *
 import logging 
 import config
+
 class Tunnl:
-    def __init__(self, auth_client: str, user_agent: str, version: int, platform: str, session):
+    def __init__(self, auth_client: str, user_agent: str, version: int, platform: str, captcha_key: str, session):
         self.auth_client = auth_client
         self.user_agent = user_agent
         self.version = version
         self.platform = platform
+        self.captcha_key = captcha_key
         self.session = session
         
         self.twitter = None
@@ -17,7 +20,13 @@ class Tunnl:
         
         self.ranks = ["PURPLE", "BRONZE_1", "BRONZE_2", "BRONZE_3", "SILVER_1", "SILVER_2", "SILVER_3"]
         self.my_rank = None
-        
+        self.campaign_ids_cliked = []
+        self.captcha= Captcha(
+            client_api_key=captcha_key,
+            website_url="https://app.tunnl.io",
+            website_key="6LdWAF8sAAAAAFLZSh3ttweah9XLSPG_df3wzCGT",
+            session=session
+        )
     async def  get_my_rank(self):
         url = "https://api-tunnl-mainnet-6l3nt.ondigitalocean.app/profile/me"
         headers = { 
@@ -120,19 +129,21 @@ class Tunnl:
             
             
             
-            if campaign["status"] == "ACTIVE" and self.ranks.index(self.my_rank) >= self.ranks.index(rank_req):
+            if campaign["status"] == "ACTIVE" and self.ranks.index(self.my_rank) >= self.ranks.index(rank_req) and campaign["id"] not in self.campaign_ids_cliked:
                 logging.info(f"Campaign ID: {campaign['id']} | Required Rank: {rank_req} | My Rank: {self.my_rank}")
                 logging.info(f"Campaign ID: {campaign['id']} | Claiming")
                 id = campaign["id"]
-                
-                claim = await self.claim_campaign(id)
+                captcha_solution = await self.captcha.get_result(await self.captcha.create_task())
+                logging.info(f"Campaign ID: {campaign['id']} | Captcha Solved")
+                claim = await self.claim_campaign(id, captcha_solution)
                 if (claim != False):
                     count +=1
+                    self.campaign_ids_cliked.append(campaign["id"])
                     logging.info(f"Campaign ID: {campaign['id']} | Claimed")
         return count
         
     
-    async def claim_campaign(self, id_campaign):
+    async def claim_campaign(self, id_campaign, captcha_solution):
         url = "https://api-tunnl-mainnet-6l3nt.ondigitalocean.app/offers/claim-faucet"
         
         headers = {
@@ -141,7 +152,8 @@ class Tunnl:
         }
         
         payload = {
-            "campaignId": id_campaign
+            "campaignId": id_campaign,
+            "captcha": captcha_solution
         }
         
         response =  await self.session.post(url, headers=headers, json=payload )

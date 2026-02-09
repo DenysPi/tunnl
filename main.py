@@ -1,4 +1,5 @@
 from tunnl import Tunnl
+from captcha import Captcha
 import os
 import random
 import aiohttp
@@ -25,16 +26,18 @@ async def main():
     user_agent = os.getenv("USER_AGENT")
     version = os.getenv("VERSION")
     platform = os.getenv("PLATFORM")
-    
+    captcha_key = os.getenv("CAPTCHA_KEY")
+    print(captcha_key)
     session = aiohttp.ClientSession(
         timeout=aiohttp.ClientTimeout(total=15)
     )
-
+    
     tunnl = Tunnl(
         auth_client=auth_client,
         user_agent=user_agent,
         version=version,
         platform=platform,
+        captcha_key=captcha_key,
         session=session
     )
     count = 0
