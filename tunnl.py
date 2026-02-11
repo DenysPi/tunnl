@@ -132,10 +132,22 @@ class Tunnl:
             if campaign["status"] == "ACTIVE" and self.ranks.index(self.my_rank) >= self.ranks.index(rank_req) and campaign["id"] not in self.campaign_ids_cliked:
                 logging.info(f"Campaign ID: {campaign['id']} | Required Rank: {rank_req} | My Rank: {self.my_rank}")
                 logging.info(f"Campaign ID: {campaign['id']} | Claiming")
-                id = campaign["id"]
-                captcha_solution = await self.captcha.get_result(await self.captcha.create_task())
-                logging.info(f"Campaign ID: {campaign['id']} | Captcha Solved")
-                claim = await self.claim_campaign(id, captcha_solution)
+                
+                campaign_id = campaign["id"]
+                
+                captcha_solution = None
+                i = 0
+                task_captcha = await self.captcha.create_task()
+                while not captcha_solution and i < 3:
+                    captcha_solution = await self.captcha.get_result(task_captcha)
+                    i +=1
+                
+                if not captcha_solution:
+                    logging.warning(
+                        f"Campaign ID: {campaign_id} | Captcha failed"
+                    )
+                    return
+                claim = await self.claim_campaign(campaign_id, captcha_solution)
                 if (claim != False):
                     count +=1
                     self.campaign_ids_cliked.append(campaign["id"])
@@ -157,6 +169,7 @@ class Tunnl:
         }
         
         response =  await self.session.post(url, headers=headers, json=payload )
+        print(await response.text())
         if response.status == 200:
             data = await response.json()  
             return data

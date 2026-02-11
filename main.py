@@ -27,7 +27,7 @@ async def main():
     version = os.getenv("VERSION")
     platform = os.getenv("PLATFORM")
     captcha_key = os.getenv("CAPTCHA_KEY")
-    print(captcha_key)
+    
     session = aiohttp.ClientSession(
         timeout=aiohttp.ClientTimeout(total=15)
     )
@@ -40,6 +40,9 @@ async def main():
         captcha_key=captcha_key,
         session=session
     )
+    
+   
+    
     count = 0
     try:
         
@@ -51,7 +54,7 @@ async def main():
         await tunnl.twitter.get_cookies()
         await tunnl.connect_tunnl_via_twitter()
         logging.info("Connected to Tunnl via Twitter successfully.")
-       
+        
         while True:
             try:
                 data = await tunnl.get_campaigns()
