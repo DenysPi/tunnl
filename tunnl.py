@@ -7,7 +7,7 @@ import logging
 import config
 
 class Tunnl:
-    def __init__(self, auth_client: str, user_agent: str, version: int, platform: str, captcha_key: str, session):
+    def __init__(self, auth_client: str, user_agent: str, version: int, platform: str, captcha_key: str, session, proxy):
         self.auth_client = auth_client
         self.user_agent = user_agent
         self.version = version
@@ -25,7 +25,8 @@ class Tunnl:
             client_api_key=captcha_key,
             website_url="https://app.tunnl.io",
             website_key="6LdWAF8sAAAAAFLZSh3ttweah9XLSPG_df3wzCGT",
-            session=session
+            session=session,
+            proxy=proxy
         )
     async def  get_my_rank(self):
         url = "https://api-tunnl-mainnet-6l3nt.ondigitalocean.app/profile/me"
@@ -123,17 +124,19 @@ class Tunnl:
     async def proceed_claims(self, data):
         count = 0
         for campaign in data:
+            campaign_id = campaign["id"]
+            remaining_budget = campaign["remaining_budget"]
             if not self.my_rank:
                 self.my_rank = await self.get_my_rank()
-            rank_req = await self.get_campaign_rank_req(campaign["id"])
+            rank_req = await self.get_campaign_rank_req(campaign_id)
             
             
             
-            if campaign["status"] == "ACTIVE" and self.ranks.index(self.my_rank) >= self.ranks.index(rank_req) and campaign["id"] not in self.campaign_ids_cliked:
+            if campaign["status"] == "ACTIVE"  and campaign["id"] not in self.campaign_ids_cliked and self.ranks.index(self.my_rank) >= self.ranks.index(rank_req) and remaining_budget != None:
                 logging.info(f"Campaign ID: {campaign['id']} | Required Rank: {rank_req} | My Rank: {self.my_rank}")
                 logging.info(f"Campaign ID: {campaign['id']} | Claiming")
                 
-                campaign_id = campaign["id"]
+                
                 
                 captcha_solution = None
                 i = 0
@@ -147,11 +150,15 @@ class Tunnl:
                         f"Campaign ID: {campaign_id} | Captcha failed"
                     )
                     return
-                claim = await self.claim_campaign(campaign_id, captcha_solution)
-                if (claim != False):
+               
+                success, error = await self.claim_campaign(campaign_id, captcha_solution)
+                if success:
                     count +=1
-                    self.campaign_ids_cliked.append(campaign["id"])
-                    logging.info(f"Campaign ID: {campaign['id']} | Claimed")
+                    self.campaign_ids_cliked.append(campaign_id)
+                    logging.info(f"Campaign ID: {campaign_id} | Claimed")
+                else:
+                    logging.error(f"Campaign ID: {campaign_id} | error: {error}")
+                
         return count
         
     
@@ -169,11 +176,11 @@ class Tunnl:
         }
         
         response =  await self.session.post(url, headers=headers, json=payload )
-        print(await response.text())
+        text = await response.text()
         if response.status == 200:
-            data = await response.json()  
-            return data
-        return False
+              
+            return True, None
+        return False, text
         
         
         

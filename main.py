@@ -27,9 +27,16 @@ async def main():
     version = os.getenv("VERSION")
     platform = os.getenv("PLATFORM")
     captcha_key = os.getenv("CAPTCHA_KEY")
+    proxy_url = os.getenv("PROXY_URL")
+    proxy_adress = os.getenv("PROXY_ADRESS")
+    proxy_port = os.getenv("PROXY_PORT")
+    proxy_login = os.getenv("PROXY_LOGIN")
+    proxy_password = os.getenv("PROXY_PASSWORD")
     
+    proxy = [proxy_adress,proxy_port,proxy_login,proxy_password]
     session = aiohttp.ClientSession(
-        timeout=aiohttp.ClientTimeout(total=15)
+        timeout=aiohttp.ClientTimeout(total=15),
+        proxy=proxy_url
     )
     
     tunnl = Tunnl(
@@ -38,11 +45,10 @@ async def main():
         version=version,
         platform=platform,
         captcha_key=captcha_key,
-        session=session
+        session=session,
+        proxy=proxy
     )
-    
-   
-    
+
     count = 0
     try:
         
