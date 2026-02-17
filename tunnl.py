@@ -149,7 +149,7 @@ class Tunnl:
                     logging.warning(
                         f"Campaign ID: {campaign_id} | Captcha failed"
                     )
-                    return
+                    pass
                
                 success, error = await self.claim_campaign(campaign_id, captcha_solution)
                 if success:
