@@ -139,17 +139,18 @@ class Tunnl:
                 
                 
                 captcha_solution = None
-                i = 0
-                task_captcha = await self.captcha.create_task()
-                while not captcha_solution and i < 3:
-                    captcha_solution = await self.captcha.get_result(task_captcha)
-                    i +=1
                 
+                task_captcha = await self.captcha.create_task()
+                
+                for attempt in range(3):
+                    captcha_solution = await self.captcha.get_result(task_captcha)
+                    if captcha_solution:
+                        break
                 if not captcha_solution:
                     logging.warning(
                         f"Campaign ID: {campaign_id} | Captcha failed"
                     )
-                    pass
+                    continue
                
                 success, error = await self.claim_campaign(campaign_id, captcha_solution)
                 if success:
