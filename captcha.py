@@ -10,15 +10,15 @@ class Captcha:
         # self.proxy= proxy
     
     async def create_task(self):
-        url = "https://api.capsolver.com/createTask"
+        url = "https://api.2captcha.com/createTask"
         headers = {
             "Content-Type": "application/json"
         }
-        
+
         payload = {
             "clientKey": self.client_api_key,
             "task": {
-                "type": "ReCaptchaV2EnterpriseTaskProxyLess",
+                "type": "RecaptchaV2EnterpriseTaskProxyless",
                 "websiteURL": self.website_url,
                 "websiteKey": self.website_key,
             }
@@ -29,12 +29,12 @@ class Captcha:
         text = await response.text()
         data = json.loads(text)
         if data.get("errorId") != 0:
-            print("CapMonster createTask error:", data)
+            print("2captcha createTask error:", data.get("errorDescription"))
             return False
         return data.get("taskId")
     
     async def get_result(self, task_id):
-        url = "https://api.capsolver.com/getTaskResult"
+        url = "https://api.2captcha.com/getTaskResult"
         headers = {
             "Content-Type": "application/json"
         }
@@ -49,7 +49,13 @@ class Captcha:
            
             
             text = await response.text()
-            data = json.loads(text)
+            try:
+                data = json.loads(text)
+            except json.JSONDecodeError:
+                print(f"2captcha bad response: {text[:80]}")
+                i += 1
+                await asyncio.sleep(1)
+                continue
             if data.get("errorId") != 0:
                 print(f"Captcha error: {data.get('errorCode')} - {data.get('errorDescription')}")
                 return False

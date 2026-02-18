@@ -37,22 +37,25 @@ class Tunnl:
 
     async def refresh_captcha_loop(self):
         while True:
-            now = time.time()
-            if not self.captcha_solution or (now - self.captcha_timestamp) >= self.captcha_ttl:
-                logging.info("Pre-solving captcha...")
-                for _ in range(3):
-                    task_id = await self.captcha.create_task()
-                    if not task_id:
-                        logging.warning("Failed to create captcha task, retrying...")
-                        continue
-                    solution = await self.captcha.get_result(task_id)
-                    if solution:
-                        self.captcha_solution = solution
-                        self.captcha_timestamp = solution["createTime"] / 1000
-                        logging.info("Captcha ready to use")
-                        break
-                else:
-                    logging.error("Failed to pre-solve captcha")
+            try:
+                now = time.time()
+                if not self.captcha_solution or (now - self.captcha_timestamp) >= self.captcha_ttl:
+                    logging.info("Pre-solving captcha...")
+                    for _ in range(3):
+                        task_id = await self.captcha.create_task()
+                        if not task_id:
+                            logging.warning("Failed to create captcha task, retrying...")
+                            continue
+                        solution = await self.captcha.get_result(task_id)
+                        if solution:
+                            self.captcha_solution = solution
+                            self.captcha_timestamp = solution["createTime"] / 1000
+                            logging.info("Captcha ready to use")
+                            break
+                    else:
+                        logging.error("Failed to pre-solve captcha")
+            except Exception as e:
+                logging.error(f"Captcha loop error: {e}")
             await asyncio.sleep(10)
 
     def consume_captcha(self):
