@@ -168,7 +168,7 @@ class Tunnl:
             if rank_req is None:
                 continue
 
-            if True:
+            if campaign["status"] == "ACTIVE" and campaign["id"] not in self.campaign_ids_cliked and self.ranks.index(self.my_rank) >= self.ranks.index(rank_req) and remaining_budget is not None:
                 logging.info(f"Campaign ID: {campaign['id']} | Required Rank: {rank_req} | My Rank: {self.my_rank}")
                 logging.info(f"Campaign ID: {campaign['id']} | Claiming")
                 
