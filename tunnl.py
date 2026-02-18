@@ -3,7 +3,9 @@ from twitter_client import TwitterClient
 from captcha import Captcha
 from helpers import *
 from config import *
-import logging 
+import logging
+import asyncio
+import time
 import config
 
 class Tunnl:
@@ -21,13 +23,44 @@ class Tunnl:
         self.ranks = ["PURPLE", "BRONZE_1", "BRONZE_2", "BRONZE_3", "SILVER_1", "SILVER_2", "SILVER_3"]
         self.my_rank = None
         self.campaign_ids_cliked = []
-        self.captcha= Captcha(
+        
+        self.captcha = Captcha(
             client_api_key=captcha_key,
             website_url="https://app.tunnl.io",
             website_key="6LdWAF8sAAAAAFLZSh3ttweah9XLSPG_df3wzCGT",
             session=session,
-            proxy=proxy
+            # proxy=proxy
         )
+        self.captcha_solution = None
+        self.captcha_timestamp = 0
+        self.captcha_ttl = 60
+
+    async def refresh_captcha_loop(self):
+        while True:
+            now = time.time()
+            if not self.captcha_solution or (now - self.captcha_timestamp) >= self.captcha_ttl:
+                logging.info("Pre-solving captcha...")
+                for _ in range(3):
+                    task_id = await self.captcha.create_task()
+                    if not task_id:
+                        logging.warning("Failed to create captcha task, retrying...")
+                        continue
+                    solution = await self.captcha.get_result(task_id)
+                    if solution:
+                        self.captcha_solution = solution
+                        self.captcha_timestamp = solution["createTime"] / 1000
+                        logging.info("Captcha ready to use")
+                        break
+                else:
+                    logging.error("Failed to pre-solve captcha")
+            await asyncio.sleep(10)
+
+    def consume_captcha(self):
+        solution = self.captcha_solution
+        self.captcha_solution = None
+        self.captcha_timestamp = 0
+        return solution
+
     async def  get_my_rank(self):
         url = "https://api-tunnl-mainnet-6l3nt.ondigitalocean.app/profile/me"
         headers = { 
@@ -109,14 +142,17 @@ class Tunnl:
     
     async def get_campaign_rank_req(self, id_campaign):
         url = f"https://api-tunnl-mainnet-6l3nt.ondigitalocean.app/campaigns/{id_campaign}"
-        headers = {     
-                   
+        headers = {
+
             'Authorization': f'Bearer {self.bearer}',
-            "User-Agent": self.user_agent   
+            "User-Agent": self.user_agent
         }
-        
-        response =  await self.session.get(url, headers=headers )
-        data = await response.json()  
+
+        response = await self.session.get(url, headers=headers)
+        if response.status != 200:
+            logging.warning(f"Campaign {id_campaign} rank req failed with status {response.status}")
+            return None
+        data = await response.json()
         return data.get("min_tier")
         
         
@@ -129,36 +165,31 @@ class Tunnl:
             if not self.my_rank:
                 self.my_rank = await self.get_my_rank()
             rank_req = await self.get_campaign_rank_req(campaign_id)
-            
-            
-            
-            if campaign["status"] == "ACTIVE"  and campaign["id"] not in self.campaign_ids_cliked and self.ranks.index(self.my_rank) >= self.ranks.index(rank_req) and remaining_budget != None:
+            if rank_req is None:
+                continue
+
+            if True:
                 logging.info(f"Campaign ID: {campaign['id']} | Required Rank: {rank_req} | My Rank: {self.my_rank}")
                 logging.info(f"Campaign ID: {campaign['id']} | Claiming")
                 
                 
                 
-                captcha_solution = None
-                
-                task_captcha = await self.captcha.create_task()
-                
-                for attempt in range(3):
-                    captcha_solution = await self.captcha.get_result(task_captcha)
-                    if captcha_solution:
-                        break
-                if not captcha_solution:
-                    logging.warning(
-                        f"Campaign ID: {campaign_id} | Captcha failed"
-                    )
+                solution_data = self.consume_captcha()
+                if not solution_data:
+                    logging.warning(f"Campaign ID: {campaign_id} | Captcha not ready yet, skipping")
                     continue
-               
-                success, error = await self.claim_campaign(campaign_id, captcha_solution)
+                captcha_token = solution_data.get("gRecaptchaResponse")
+                if not captcha_token:
+                    logging.warning(f"Campaign ID: {campaign_id} | Captcha token missing")
+                    continue
+
+                success, error = await self.claim_campaign(campaign_id, captcha_token)
                 if success:
                     count +=1
                     self.campaign_ids_cliked.append(campaign_id)
                     logging.info(f"Campaign ID: {campaign_id} | Claimed")
                 else:
-                    logging.error(f"Campaign ID: {campaign_id} | error: {error}")
+                    logging.error(f"Campaign ID: {campaign_id} | Claim failed: {campaign.get('name', campaign_id)} - {error}")
                 
         return count
         

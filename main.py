@@ -36,7 +36,7 @@ async def main():
     proxy = [proxy_adress,proxy_port,proxy_login,proxy_password]
     session = aiohttp.ClientSession(
         timeout=aiohttp.ClientTimeout(total=15),
-        proxy=proxy_url
+        # proxy=proxy_url
     )
     
     tunnl = Tunnl(
@@ -60,6 +60,7 @@ async def main():
         await tunnl.twitter.get_cookies()
         await tunnl.connect_tunnl_via_twitter()
         logging.info("Connected to Tunnl via Twitter successfully.")
+        asyncio.create_task(tunnl.refresh_captcha_loop())
         
         while True:
             try:

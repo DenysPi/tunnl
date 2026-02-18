@@ -2,12 +2,12 @@ import asyncio
 import random
 import json
 class Captcha:
-    def __init__(self, client_api_key, website_url, website_key, session, proxy):
+    def __init__(self, client_api_key, website_url, website_key, session, proxy=None):
         self.client_api_key = client_api_key
         self.website_url = website_url
         self.website_key = website_key
         self.session = session
-        self.proxy= proxy
+        # self.proxy= proxy
     
     async def create_task(self):
         url = "https://api.capsolver.com/createTask"
@@ -18,15 +18,9 @@ class Captcha:
         payload = {
             "clientKey": self.client_api_key,
             "task": {
-                "type": "ReCaptchaV2EnterpriseTask",
+                "type": "ReCaptchaV2EnterpriseTaskProxyLess",
                 "websiteURL": self.website_url,
                 "websiteKey": self.website_key,
-                "proxyType": "http",
-                "proxyAddress": self.proxy[0],
-                "proxyPort": int(self.proxy[1]),
-                "proxyLogin": self.proxy[2],
-                "proxyPassword": self.proxy[3]
-                
             }
         }
         
@@ -61,7 +55,9 @@ class Captcha:
                 return False
             if data.get("status") == "ready":
                 print(f"Captcha claimed after {i} secondes")
-                return data.get("solution", {}).get("gRecaptchaResponse")
+                solution = data.get("solution", {})
+                solution["createTime"] = data.get("createTime", 0)
+                return solution
             i += 1
             
             await asyncio.sleep(1)
